@@ -66,6 +66,18 @@ int main(int argc, char *argv[]) {
     if (rank == 0) {
         printf("\nGathered Result Matrix:\n");
         printMatrix(n, m, result);
+
+        int flag = 1;
+        for (int i = 0; i < n * m; ++i) {
+            if(result[i] != A[i] + B[i]){
+                printf("\nMatrices Are Not Equal!\n");
+                flag = 0;
+                break;
+            }
+        }
+        if(flag == 1){
+            printf("\nMatrices are Equal!\n");
+        }
     }
 
     // Free allocated memory

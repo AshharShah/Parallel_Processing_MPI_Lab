@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    // Master process generates the random matrix
+    // generate a random matrix in the master process
     if (rank == 0) {
         srand(time(NULL));
         printf("Original Matrix:\n");
@@ -27,27 +27,44 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Scatter the matrix among processes
-    MPI_Scatter(originalMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, receivedMatrix,
-                MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, 0, MPI_COMM_WORLD);
+    // scatter the matrix among the different processes
+    MPI_Scatter(originalMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, receivedMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // Do computations here using receivedMatrix
+    // print the processes and how many elements each process got
+    printf("\nProcess %d, Partitioned Matrix:\n", rank);
+    for (int i = 0; i < MATRIX_SIZE; ++i) {
+        for (int j = 0; j < MATRIX_SIZE; ++j) {
+            printf("%d ", receivedMatrix[i][j]);
+        }
+        printf("\n");
+    }
 
-    // Gather the results back to the master process
-    MPI_Gather(receivedMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, originalMatrix,
-               MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, 0, MPI_COMM_WORLD);
+    // gather the matrix back
+    MPI_Gather(receivedMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, originalMatrix, MATRIX_SIZE * MATRIX_SIZE / size, MPI_INT, 0, MPI_COMM_WORLD);
 
-    // Master process verifies the gathered matrix
+    // verify if the matrices were equal
     if (rank == 0) {
         printf("\nGathered Matrix:\n");
         for (int i = 0; i < MATRIX_SIZE; ++i) {
             for (int j = 0; j < MATRIX_SIZE; ++j) {
-                printf("%d ", originalMatrix[i][j]);
+                printf("%d ", receivedMatrix[i][j]);
             }
             printf("\n");
         }
-        // Compare originalMatrix with the expected original matrix to verify
-        // If they are the same, your MPI code is correct.
+
+        int flag = 1;
+        for(int i = 0; i < MATRIX_SIZE; i++){
+            for(int j = 0; j < MATRIX_SIZE; j++){
+                if(originalMatrix[i][j] != receivedMatrix[i][j]){
+                    printf("\nThe Matrices Are Not Equal!!\n");
+                    flag = 0;
+                    break;
+                }
+            }
+            if(flag == 0){
+                break;
+            }
+        }
     }
 
     MPI_Finalize();
